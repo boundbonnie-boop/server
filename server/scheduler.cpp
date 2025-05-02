@@ -212,6 +212,7 @@ void Scheduler::run() {
         else {
             if(is_active) {
                 --m_activeThreadCount;
+                continue;
             }
             if(idle_fiber->getState() == Fiber::TERM) {
                 SERVER_LOG_INFO(g_logger) << "idle fiber term";

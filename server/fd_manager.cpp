@@ -1,6 +1,8 @@
 #include "fd_manager.h"
 #include "hook.h"
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 namespace server {
 
@@ -26,8 +28,7 @@ bool FdCtx::init() {
     if(fstat(m_fd, &fd_stat) == -1) {
         m_isInit = false;
         m_isSocket = false;
-    }
-    else {
+    } else {
         m_isInit = true;
         m_isSocket = S_ISSOCK(fd_stat.st_mode);
     }
@@ -38,8 +39,7 @@ bool FdCtx::init() {
             fcntl_f(m_fd, F_SETFL, flags | O_NONBLOCK);
         }
         m_sysNonblock = true;
-    }
-    else {
+    } else {
         m_sysNonblock = false;
     }
 
@@ -50,19 +50,17 @@ bool FdCtx::init() {
 }
     
 void FdCtx::setTimeout(int type, uint64_t v) {
-    if(type == SO_RECVTIMEO) {
+    if(type == SO_RCVTIMEO) {
         m_recvTimeout = v;
-    }
-    else {
+    } else {
         m_sendTimeout = v;
     }
 }
 
 uint64_t FdCtx::getTimeout(int type) {
-    if(type == SO_RECVTIMEO) {
+    if(type == SO_RCVTIMEO) {
         return m_recvTimeout;
-    }
-    else {
+    } else {
         return m_sendTimeout;
     }
 }
@@ -72,13 +70,15 @@ FdManager::FdManager() {
 }
 
 FdCtx::ptr FdManager::get(int fd, bool auto_create) {
+    if(fd == -1) {
+        return nullptr;
+    }
     RWMutexType::ReadLock rlock(m_mutex);
-    if(m_datas.size() <= fd) {
+    if((int)m_datas.size() <= fd) {
         if(auto_create == false) {
             return nullptr;
         }
-    }
-    else {
+    } else {
         if(m_datas[fd] || !auto_create) {
             return m_datas[fd];
         }
@@ -87,13 +87,16 @@ FdCtx::ptr FdManager::get(int fd, bool auto_create) {
 
     RWMutexType::WriteLock wlock(m_mutex);
     FdCtx::ptr ctx(new FdCtx(fd));
+    if(fd >= (int)m_datas.size()) {
+        m_datas.resize(fd * 1.5);
+    }
     m_datas[fd] = ctx;
     return ctx;
 }
 
 void FdManager::del(int fd) {
     RWMutexType::WriteLock lock(m_mutex);
-    if(m_datas.size() <= fd) {
+    if((int)m_datas.size() <= fd) {
         return ;
     }
     m_datas[fd].reset();

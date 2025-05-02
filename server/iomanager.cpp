@@ -315,8 +315,8 @@ void IOManager::idle() {
         for(int i = 0; i < rt; ++i) {
             epoll_event& event = events[i];
             if(event.data.fd == m_tickleFds[0]) {
-                uint8_t dummy;
-                while(read(m_tickleFds[0], &dummy, 1) == 1) {
+                uint8_t dummy[256];
+                while(read(m_tickleFds[0], dummy, sizeof(dummy)) > 0) {
                     // SERVER_LOG_INFO(g_logger) << dummy;
                 }
                 continue;
@@ -325,7 +325,7 @@ void IOManager::idle() {
             FdContext* fd_ctx = (FdContext*)event.data.ptr;
             FdContext::MutexType::Lock fdlock(fd_ctx->mutex);
             if(event.events & (EPOLLERR | EPOLLHUP)) {
-                event.events |= EPOLLIN | EPOLLOUT;
+                event.events |= (EPOLLIN | EPOLLOUT) & fd_ctx->events;
             }
             int real_events = NONE;
             if(event.events & EPOLLIN) {

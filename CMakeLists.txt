@@ -19,7 +19,8 @@ set(LIB_SRC
     server/scheduler.cpp
     server/iomanager.cpp
     server/timer.cpp
-#    server/hook.cpp
+    server/fd_manager.cpp
+    server/hook.cpp
     )
 
 add_library(server SHARED ${LIB_SRC})
@@ -73,10 +74,10 @@ add_dependencies(test_iomanager server)
 force_redefine_file_macro_for_sources(test_iomanager)
 target_link_libraries(test_iomanager ${LIB_LIB})
 
-#add_executable(test_hook tests/test_hook.cpp)
-#add_dependencies(test_hook server)
-#force_redefine_file_macro_for_sources(test_hook)
-#target_link_libraries(test_hook ${LIB_LIB})
+add_executable(test_hook tests/test_hook.cpp)
+add_dependencies(test_hook server)
+force_redefine_file_macro_for_sources(test_hook)
+target_link_libraries(test_hook ${LIB_LIB})
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
